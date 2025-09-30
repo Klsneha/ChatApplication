@@ -113,7 +113,7 @@ const logout = (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const profilePic = req.body;
-    const userId = req.use._id;
+    const userId = req.user.id;
 
     if (!profilePic) {
       return res.status(400).json({ message: "Picture is not uploaded" });

@@ -4,6 +4,7 @@ import User from "../models/users.models.js";
 export const protectedRoute = async (req, res, next) => {
   try{
     const cookies = req.cookies;
+    console.log("cookies", cookies);
     if (!cookies.jwt) {
       res.status(401).json({ message: "Unauthorized - No token provided" });
       return;
@@ -17,12 +18,12 @@ export const protectedRoute = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
     req.user = user;
     next();
   } catch (err) {
     console.log("Error while verifying token", err);
-    return res.status(505).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
