@@ -16,8 +16,14 @@ const userSchema = new mongoose.Schema(
       minlength: 6
     },
     profilePic: {
-      type: String,
-      default: ""
+      imageUrl: {
+        type: String,
+        default: ""
+      },
+      imageId: {
+        type: String,
+        default: ""
+      }
     }
   },
   // This will create createdAt, updatedAt fields. 

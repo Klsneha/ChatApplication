@@ -1,12 +1,13 @@
 import User from "../models/users.models.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
+import { io, userSocketMap } from "../lib/socket.js";
 
 const getUsersForSidebar = async (req, res) => {
   try {
-    const myUserId = req.user.id;
+    const loggedInUserId = req.user.id;
     const listUsers = await User.find().select("-password");
-    const users = listUsers.filter((user) => user.id !== myUserId);
+    const users = listUsers.filter((user) => user.id !== loggedInUserId);
     if (users) {
       return res.status(200).json(users);
     } else {
@@ -16,13 +17,12 @@ const getUsersForSidebar = async (req, res) => {
     console.log(err);
     res.status(500).json({ message: "Interal Server Error" });
   }
-  
 };
 
 const getMessages = async (req, res) => {
   try {
-    const { id: userToChatId } = req.params;
-    const myId = req.user.id;
+    const { id: userToChatId } = req.params; // other user
+    const myId = req.user.id; // senderId
 
     const messages = await Message.find({
       $or: [
@@ -40,23 +40,25 @@ const getMessages = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    console.log("** here");
     const { text, image } = req.body;
     const { id: receivedId } = req.params;
     const senderId = req.user.id;
 
-    console.log("senderId", senderId);
 
     let imageUrl;
     if (image) {
-      const uploadResponse = await cloudinary.uploader.upload("image");
+      const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl =  uploadResponse.secure_url;
     }
 
-    const message = await Message.create({ senderId, receivedId, text, image: imageUrl});
-    console.log("** message", message);
-    if (!!message) {
-      res.status(201).json({ message: "New message has been sent" });
+    const newMessage = await Message.create({ senderId, receivedId, text, image: imageUrl});
+    if (newMessage) {
+      const receiverSocketId = userSocketMap[receivedId];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", newMessage);
+      }
+
+      res.status(201).json({ newMessage, message: "New message has been sent" });
       return;
     } else {
       res.status(400).json({ message: "Issue while sending message" });

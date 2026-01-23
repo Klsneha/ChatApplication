@@ -1,5 +1,4 @@
 import User from "../models/users.models.js";
-import asyncHandler from "express-async-handler";
 import { generateToken } from "../lib/utils.js";
 import bcrypt from "bcrypt";
 import cloudinary from "../lib/cloudinary.js";
@@ -63,7 +62,6 @@ const login = async (req, res) => {
     }
 
     const userDetails = await User.findOne({ email }).lean().exec();
-    console.log("** userDetails", userDetails);
     if (!userDetails) {
       res.status(400).json({ message: "Unauthorized: Invalid credentials" });
       return;
@@ -112,18 +110,27 @@ const logout = (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const profilePic = req.body;
+    const { profilePic } = req.body;
     const userId = req.user.id;
 
     if (!profilePic) {
       return res.status(400).json({ message: "Picture is not uploaded" });
     }
 
-    const uploadResponse = await cloudinary.uploader.upload("my_image.jpg");
+    const userProfilePicDetails = await User.findById(userId).select("profilePic");
+    const currentImageId = userProfilePicDetails?.profilePic?.imageId;
+    if (currentImageId) {
+      await cloudinary.uploader.destroy(currentImageId);
+    }
+
+    const uploadResponse = await cloudinary.uploader.upload(profilePic);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { 
-        profilePic: uploadResponse.secure_url
+        profilePic: {
+          imageUrl: uploadResponse.secure_url,
+          imageId: uploadResponse.public_id
+        }
       },
       { 
         new:true
