@@ -2,6 +2,7 @@ import User from "../models/users.models.js";
 import Message from "../models/message.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { io, userSocketMap } from "../lib/socket.js";
+import { gemini, GEMINI_EMBEDDING_MODEL } from "../lib/llm/gemini.js";
 
 const getUsersForSidebar = async (req, res) => {
   try {
@@ -51,7 +52,16 @@ const sendMessage = async (req, res) => {
       imageUrl =  uploadResponse.secure_url;
     }
 
-    const newMessage = await Message.create({ senderId, receivedId, text, image: imageUrl});
+    // Generate embedding
+    const embeddingResponse = await gemini.models.embedContent({
+      model: GEMINI_EMBEDDING_MODEL,
+      contents: text,
+      config: { outputDimensionality: 10 }
+    });
+
+    const embedding = embeddingResponse.embeddings?.[0]?.values;
+
+    const newMessage = await Message.create({ senderId, receivedId, text, image: imageUrl, embedding});
     if (newMessage) {
       const receiverSocketId = userSocketMap[receivedId];
       if (receiverSocketId) {

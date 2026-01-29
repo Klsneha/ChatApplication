@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
+import chatBotRoutes from "./routes/chatbot.route.js";
 import { connectDB } from "./lib/db.js";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
@@ -22,6 +23,7 @@ app.use(cors({
 
 app.use("/api/auth", authRoutes);
 app.use("/api/message", messageRoutes);
+app.use("/api/chat", chatBotRoutes);
 
 mongoose.connection.once("open", () => {
   console.log("Connected to MongoDB");

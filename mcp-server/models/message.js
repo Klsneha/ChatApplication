@@ -17,11 +17,6 @@ const messageSchema = new mongoose.Schema(
     },
     image: {
       type: String
-    },
-    embedding: {
-      type: [Number],
-      default: [],
-      required: false,
     }
   },
   // This will create createdAt, updatedAt fields. 
